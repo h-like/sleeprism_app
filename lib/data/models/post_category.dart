@@ -17,7 +17,7 @@ extension PostCategoryExtension on PostCategory {
       case PostCategory.FREE_TALK:
         return '자유로운 이야기';
       default:
-        return '';
+        return '자유';
     }
   }
 }

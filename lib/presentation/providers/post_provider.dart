@@ -12,6 +12,9 @@ import '../../data/services/post_service.dart';
 // 여러 종류의 게시글 목록을 관리하기 위한 열거형
 enum PostListType { all, myPosts, likedPosts, bookmarkedPosts }
 
+// 인기글 기간을 관리하기 위한 열거형
+enum PopularPostPeriod { today, week, month, all_time }
+
 class PostProvider with ChangeNotifier {
   final PostService _postService = PostService();
   final CommentService _commentService = CommentService();
@@ -22,6 +25,11 @@ class PostProvider with ChangeNotifier {
   Map<PostListType, String?> _errorMessages = {};
   PostCategory? _selectedCategory; // 선택된 카테고리 상태 추가
 
+  // --- 인기글 페이지 상태 변수 추가 ---
+  Map<PopularPostPeriod, List<Post>> _popularPosts = {};
+  bool _isPopularLoading = false;
+  String? _popularError;
+  PopularPostPeriod _selectedPeriod = PopularPostPeriod.week; // 기본값 '주간'
 
   // --- 상세 페이지 상태 ---
   Post? _detailedPost;
@@ -56,6 +64,12 @@ class PostProvider with ChangeNotifier {
   List<Post> get searchResults => _searchResults;
   bool get isSearchLoading => _isSearchLoading;
   String? get searchError => _searchError;
+
+  // --- 인기글 Getter 추가 ---
+  List<Post> get popularPosts => _popularPosts[_selectedPeriod] ?? [];
+  bool get isPopularLoading => _isPopularLoading;
+  String? get popularError => _popularError;
+  PopularPostPeriod get selectedPeriod => _selectedPeriod;
 
   // 카테고리 변경 및 데이터 리프레시
   Future<void> changeCategoryAndFetch(PostCategory? category) async {
@@ -167,6 +181,37 @@ class PostProvider with ChangeNotifier {
       _searchError = e.toString();
     } finally {
       _isSearchLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // --- 인기글 관련 메소드 추가 ---
+
+  // 기간 변경 및 데이터 리프레시
+  Future<void> changePeriodAndFetch(PopularPostPeriod period) async {
+    _selectedPeriod = period;
+    // 해당 기간의 데이터가 없으면 새로 불러옴
+    if (_popularPosts[period] == null) {
+      await fetchPopularPosts();
+    } else {
+      // 이미 데이터가 있으면 상태만 변경하여 UI 즉시 업데이트
+      notifyListeners();
+    }
+  }
+  // 인기 게시글 데이터를 불러오는 메소드
+  Future<void> fetchPopularPosts() async {
+    _isPopularLoading = true;
+    _popularError = null;
+    notifyListeners();
+
+    try {
+      // 현재 선택된 기간(enum)을 API가 요구하는 문자열로 변환하여 전달
+      final posts = await _postService.fetchPopularPosts(period: _selectedPeriod.name);
+      _popularPosts[_selectedPeriod] = posts;
+    } catch (e) {
+      _popularError = e.toString();
+    } finally {
+      _isPopularLoading = false;
       notifyListeners();
     }
   }

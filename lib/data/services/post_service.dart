@@ -100,6 +100,7 @@ class PostService {
     }
   }
 
+
   // --- 검색 메소드 추가 ---
   Future<List<Post>> searchPosts({required String type, required String keyword}) async {
     final endpoint = '/api/posts/search?type=$type&keyword=$keyword';
@@ -114,6 +115,14 @@ class PostService {
     } else {
       throw Exception('게시글 검색에 실패했습니다.');
     }
+  }
+
+  // --- 인기 게시글 목록을 가져오는 함수 ---
+  Future<List<Post>> fetchPopularPosts({String period = 'all_time'}) async {
+    // 백엔드 API 형식에 맞게 쿼리 파라미터 추가
+    // 예: /api/posts/popular?period=week
+    final endpoint = '/api/posts/popular?period=$period';
+    return _fetchPostsFromApi(endpoint);
   }
 
   // --- 기존 메소드들 내용 채우기 ---

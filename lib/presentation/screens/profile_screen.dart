@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import 'package:sleeprism_app/presentation/screens/post_detail_screen.dart';
 import '../providers/auth_provider.dart';
 import '../providers/post_provider.dart';
-import '../../data/models/post_model.dart';
 import '../../data/models/user_model.dart'; // User 모델 import 추가
 
 class ProfileScreen extends StatefulWidget {
