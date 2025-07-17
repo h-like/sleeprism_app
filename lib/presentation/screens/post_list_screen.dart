@@ -2,7 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sleeprism_app/presentation/screens/post_search_delegate.dart';
+import '../../data/models/post_category.dart';
 import '../providers/post_provider.dart';
+import 'post_detail_screen.dart'; // 상세 페이지 import
 
 class PostListScreen extends StatefulWidget {
   const PostListScreen({super.key});
@@ -12,69 +15,123 @@ class PostListScreen extends StatefulWidget {
 }
 
 class _PostListScreenState extends State<PostListScreen> {
-  // 위젯이 처음 빌드될 때 딱 한 번만 데이터를 불러오기 위한 플래그
   bool _isInitialised = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_isInitialised) {
-      // Provider를 통해 데이터 로딩 함수 호출
-      // listen: false 옵션으로 불필요한 재빌드를 방지
-      Provider.of<PostProvider>(context, listen: false).fetchPosts();
+      // PostListType.all 타입의 게시글을 불러옴
+      Provider.of<PostProvider>(context, listen: false).fetchPostsFor(PostListType.all);
       _isInitialised = true;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Consumer 위젯을 사용해 PostProvider의 변화를 감지하고 UI를 다시 그립니다.
     return Scaffold(
       appBar: AppBar(
-        title: const Text('게시글 목록'),
+        title: const Text('홈'),
         backgroundColor: Colors.blueAccent,
         foregroundColor: Colors.white,
-      ),
-      body: Consumer<PostProvider>(
-        builder: (context, postProvider, child) {
-          // 1. 로딩 중일 때
-          if (postProvider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          // 2. 에러가 발생했을 때
-          if (postProvider.errorMessage != null) {
-            return Center(child: Text('에러 발생: ${postProvider.errorMessage}'));
-          }
-          // 3. 데이터가 없거나 비어있을 때
-          if (postProvider.posts.isEmpty) {
-            return const Center(child: Text('게시글이 없습니다.'));
-          }
-
-          // 4. 데이터 로딩에 성공했을 때
-          final posts = postProvider.posts;
-          return ListView.builder(
-            itemCount: posts.length,
-            itemBuilder: (context, index) {
-              final post = posts[index];
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.all(16),
-                  title: Text(
-                    post.title,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: Text('작성자: ${post.authorName}\n카테고리: ${post.category} | 조회수: ${post.viewCount}'),
-                  ),
-                  trailing: const Icon(Icons.arrow_forward_ios),
-                  onTap: () {
-                    // TODO: 나중에 게시글 상세 페이지로 이동하는 로직 구현
-                    print('${post.title} tapped!');
-                  },
-                ),
+        actions: [
+          // 검색 아이콘 버튼 추가
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              showSearch(
+                context: context,
+                delegate: PostSearchDelegate(),
               );
+            },
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // 카테고리 필터 드롭다운 메뉴
+          _buildCategoryFilter(),
+          // 게시글 목록
+          Expanded(
+            child: Consumer<PostProvider>(
+              builder: (context, postProvider, child) {
+                final posts = postProvider.postsFor(PostListType.all);
+                final isLoading = postProvider.isLoadingFor(PostListType.all);
+                final error = postProvider.errorFor(PostListType.all);
+
+                if (isLoading && posts.isEmpty) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (error != null) {
+                  return Center(child: Text('에러 발생: $error'));
+                }
+                if (posts.isEmpty) {
+                  return const Center(child: Text('게시글이 없습니다.'));
+                }
+
+                return RefreshIndicator(
+                  onRefresh: () => postProvider.fetchPostsFor(PostListType.all),
+                  child: ListView.builder(
+                    itemCount: posts.length,
+                    itemBuilder: (context, index) {
+                      final post = posts[index];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.all(16),
+                          title: Text(post.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text('작성자: ${post.authorNickname}\n카테고리: ${post.category} | 조회수: ${post.viewCount}'),
+                          ),
+                          trailing: const Icon(Icons.arrow_forward_ios),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => PostDetailScreen(postId: post.id)),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 카테고리 필터 위젯
+  Widget _buildCategoryFilter() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      alignment: Alignment.centerRight,
+      child: Consumer<PostProvider>(
+        builder: (context, provider, child) {
+          return DropdownButton<PostCategory?>(
+            value: provider.selectedCategory,
+            hint: const Text('전체 카테고리'),
+            underline: const SizedBox(), // 밑줄 제거
+            items: [
+              // '전체' 메뉴 아이템
+              const DropdownMenuItem<PostCategory?>(
+                value: null,
+                child: Text('전체'),
+              ),
+              // Enum으로부터 메뉴 아이템 목록 생성
+              ...PostCategory.values.map((category) {
+                return DropdownMenuItem<PostCategory?>(
+                  value: category,
+                  child: Text(category.displayName), // 한글 이름으로 표시
+                );
+              }).toList(),
+            ],
+            onChanged: (newValue) {
+              // Provider의 메소드를 호출하여 카테고리 변경
+              provider.changeCategoryAndFetch(newValue);
             },
           );
         },

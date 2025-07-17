@@ -1,6 +1,7 @@
 // lib/presentation/screens/main_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:sleeprism_app/presentation/screens/profile_screen.dart';
 import 'post_list_screen.dart'; // 게시글 목록 화면
 
 class MainScreen extends StatefulWidget {
@@ -19,7 +20,7 @@ class _MainScreenState extends State<MainScreen> {
     Center(child: Text('검색', style: TextStyle(fontSize: 30))), // 1번: 검색
     Center(child: Text('글쓰기', style: TextStyle(fontSize: 30))), // 2번: 글쓰기
     Center(child: Text('알림', style: TextStyle(fontSize: 30))), // 3번: 알림
-    Center(child: Text('내 정보', style: TextStyle(fontSize: 30))), // 4번: 내 정보
+    ProfileScreen(), // 4번: 내 정보
   ];
 
   void _onItemTapped(int index) {
