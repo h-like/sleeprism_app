@@ -72,11 +72,12 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     // user 모델은 authProvider에서 가져오므로 직접적인 null 체크가 필요합니다.
-    final user = authProvider.user;
+    final user = Provider.of<AuthProvider>(context).user;
 
     if (user == null) {
+      // AuthProvider가 유저 정보를 로드하는 동안 로딩 인디케이터를 보여줄 수 있습니다.
       return const Scaffold(
-        body: Center(child: Text('로그인 정보가 없습니다. 다시 로그인해주세요.')),
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 

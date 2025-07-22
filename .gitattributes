@@ -2,3 +2,5 @@
 *.yaml   text eol=lf
 pubspec.* text eol=lf
 *.lock    text eol=lf
+* text=auto
+*.dart text eol=lf

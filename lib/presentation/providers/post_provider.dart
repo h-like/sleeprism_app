@@ -1,6 +1,7 @@
 // lib/presentation/providers/post_provider.dart
 
 import 'package:flutter/material.dart';
+import 'package:sleeprism_app/api/api_service.dart';
 import 'package:sleeprism_app/data/models/post_category.dart';
 
 // import 'package.flutter/material.dart';
@@ -18,6 +19,8 @@ enum PopularPostPeriod { today, week, month, all_time }
 class PostProvider with ChangeNotifier {
   final PostService _postService = PostService();
   final CommentService _commentService = CommentService();
+  final ApiService _apiService;
+  PostProvider(this._apiService);
 
   // --- 목록 페이지 상태 ---
   Map<PostListType, List<Post>> _posts = {};

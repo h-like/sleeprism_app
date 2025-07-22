@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:sleeprism_app/presentation/screens/explore_screen.dart';
+import 'package:sleeprism_app/presentation/screens/notification_hub_screen.dart';
 import 'package:sleeprism_app/presentation/screens/profile_screen.dart';
 import 'package:sleeprism_app/presentation/screens/sound_mixer_screen.dart';
 import 'post_list_screen.dart'; // 게시글 목록 화면
@@ -21,7 +22,7 @@ class _MainScreenState extends State<MainScreen> {
     PostListScreen(), // 0번: 홈 (게시글 목록)
     ExploreScreen(),
     SoundMixerScreen(), // 2번: 음악 믹서
-    Center(child: Text('알림', style: TextStyle(fontSize: 30))), // 3번: 알림
+    NotificationHubScreen(), // 3번: 알림
     ProfileScreen(), // 4번: 내 정보
   ];
 
@@ -43,8 +44,8 @@ class _MainScreenState extends State<MainScreen> {
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
           BottomNavigationBarItem(icon: Icon(Icons.explore), label: '탐색'),
-          BottomNavigationBarItem(icon: Icon(Icons.music_note), label: 'asmr'),
-          BottomNavigationBarItem(icon: Icon(Icons.notifications_none), label: '알림'),
+          BottomNavigationBarItem(icon: Icon(Icons.music_note), label: '음악'),
+          BottomNavigationBarItem(icon: Icon(Icons.notifications_none), label: '알림'), // 3번 인덱스
           BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: '내 정보'),
         ],
         currentIndex: _selectedIndex,
