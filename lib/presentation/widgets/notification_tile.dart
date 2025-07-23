@@ -60,6 +60,7 @@ class NotificationTile extends StatelessWidget {
             const SnackBar(content: Text('이동할 경로가 지정되지 않은 알림입니다.')),
           );
         }
+        // context.go('chat/room/${chatRoom.id}');
         print("Notification tapped: ${notification.redirectPath}");
       },
     );

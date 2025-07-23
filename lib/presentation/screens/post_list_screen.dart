@@ -1,11 +1,9 @@
-// lib/presentation/screens/post_list_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sleeprism_app/presentation/screens/post_search_delegate.dart';
 import '../../data/models/post_category.dart';
 import '../providers/post_provider.dart';
-import 'post_detail_screen.dart'; // 상세 페이지 import
+import '../widgets/post_list_item.dart'; // 새로 만든 PostListItem 위젯 import
 
 class PostListScreen extends StatefulWidget {
   const PostListScreen({super.key});
@@ -21,7 +19,6 @@ class _PostListScreenState extends State<PostListScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_isInitialised) {
-      // PostListType.all 타입의 게시글을 불러옴
       Provider.of<PostProvider>(context, listen: false).fetchPostsFor(PostListType.all);
       _isInitialised = true;
     }
@@ -32,10 +29,11 @@ class _PostListScreenState extends State<PostListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('홈'),
-        backgroundColor: Colors.blueAccent,
-        foregroundColor: Colors.white,
+        // AppBar 디자인은 기존 코드를 유지하거나 원하는 대로 수정할 수 있습니다.
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0.5,
         actions: [
-          // 검색 아이콘 버튼 추가
           IconButton(
             icon: const Icon(Icons.search),
             onPressed: () {
@@ -69,30 +67,17 @@ class _PostListScreenState extends State<PostListScreen> {
                   return const Center(child: Text('게시글이 없습니다.'));
                 }
 
+                // 새로고침 기능이 있는 ListView
                 return RefreshIndicator(
                   onRefresh: () => postProvider.fetchPostsFor(PostListType.all),
                   child: ListView.builder(
+                    // ListView의 상하단 기본 패딩 제거
+                    padding: EdgeInsets.zero,
                     itemCount: posts.length,
                     itemBuilder: (context, index) {
                       final post = posts[index];
-                      return Card(
-                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.all(16),
-                          title: Text(post.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: Text('작성자: ${post.authorNickname}\n카테고리: ${post.category} | 조회수: ${post.viewCount}'),
-                          ),
-                          trailing: const Icon(Icons.arrow_forward_ios),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => PostDetailScreen(postId: post.id)),
-                            );
-                          },
-                        ),
-                      );
+                      // 새로 만든 PostListItem 위젯을 사용
+                      return PostListItem(post: post);
                     },
                   ),
                 );
@@ -104,11 +89,14 @@ class _PostListScreenState extends State<PostListScreen> {
     );
   }
 
-  // 카테고리 필터 위젯
+  // 카테고리 필터 위젯 (기존 코드와 동일)
   Widget _buildCategoryFilter() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       alignment: Alignment.centerRight,
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: Colors.grey.shade200, width: 1.0)),
+      ),
       child: Consumer<PostProvider>(
         builder: (context, provider, child) {
           return DropdownButton<PostCategory?>(
@@ -116,21 +104,18 @@ class _PostListScreenState extends State<PostListScreen> {
             hint: const Text('전체 카테고리'),
             underline: const SizedBox(), // 밑줄 제거
             items: [
-              // '전체' 메뉴 아이템
               const DropdownMenuItem<PostCategory?>(
                 value: null,
                 child: Text('전체'),
               ),
-              // Enum으로부터 메뉴 아이템 목록 생성
               ...PostCategory.values.map((category) {
                 return DropdownMenuItem<PostCategory?>(
                   value: category,
-                  child: Text(category.displayName), // 한글 이름으로 표시
+                  child: Text(category.displayName),
                 );
               }).toList(),
             ],
             onChanged: (newValue) {
-              // Provider의 메소드를 호출하여 카테고리 변경
               provider.changeCategoryAndFetch(newValue);
             },
           );

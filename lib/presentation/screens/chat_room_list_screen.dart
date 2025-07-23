@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sleeprism_app/presentation/providers/chat_room_list_provider.dart';
 import '../providers/chat_provider.dart';
 import '../widgets/chat_room_tile.dart';
 
@@ -17,13 +18,13 @@ class _ChatRoomListScreenState extends State<ChatRoomListScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<ChatProvider>(context, listen: false).fetchChatRooms();
+      Provider.of<ChatRoomListProvider>(context, listen: false).fetchChatRooms();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ChatProvider>(
+    return Consumer<ChatRoomListProvider>(
       builder: (context, provider, child) {
         if (provider.isLoading) {
           return const Center(child: CircularProgressIndicator());
