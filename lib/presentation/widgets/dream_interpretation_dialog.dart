@@ -67,6 +67,7 @@ class _DreamInterpretationDialogState extends State<DreamInterpretationDialog> {
   Widget _buildErrorView(String? error) {
     return SizedBox(
       height: 200,
+
       child: Column(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
@@ -95,8 +96,11 @@ class _DreamInterpretationDialogState extends State<DreamInterpretationDialog> {
 
     return SizedBox(
       width: double.maxFinite,
+        child: SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
+
+
         children: [
           const Text('마음이 이끄는 카드를 선택하세요', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
@@ -121,6 +125,7 @@ class _DreamInterpretationDialogState extends State<DreamInterpretationDialog> {
             onPressed: () => Navigator.of(context).pop(),
           ),
         ],
+        ),
       ),
     );
   }
@@ -150,7 +155,7 @@ class _DreamInterpretationDialogState extends State<DreamInterpretationDialog> {
             image: const DecorationImage(
               // TODO: 카드 뒷면 이미지를 assets에 추가하고 경로 수정
               // image: NetworkImage('${ApiConstants.baseUrl}/images/tarot_back.png'),
-              image: NetworkImage('/images/back_card.png'),
+              image: AssetImage('assets/images/tarot_back.png'),
               // Image.asset('asset/images/back_card.png'),
               fit: BoxFit.cover,
             ),

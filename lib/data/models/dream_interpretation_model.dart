@@ -1,7 +1,5 @@
 // lib/data/models/dream_interpretation_model.dart
 
-// import '../../utils/image_url_builder.dart';
-
 // API 응답의 최상위 구조
 import 'package:sleeprism_app/presentation/utils/image_url_builder.dart';
 

@@ -17,6 +17,12 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  int? get currentUserId {
+    // context.read는 값의 변화를 감지하지 않고, 필요할 때 일회성으로 값을 읽어올 때 사용합니다.
+    return context.read<AuthProvider>().user?.id;
+  }
+
+
   @override
   void initState() {
     super.initState();
@@ -38,6 +44,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     if (!_tabController.indexIsChanging) {
       final postProvider = Provider.of<PostProvider>(context, listen: false);
       final token = Provider.of<AuthProvider>(context, listen: false).token;
+
       if (token == null) return;
 
       PostListType currentType;
@@ -55,8 +62,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           return;
       }
       // 이미 로딩된 데이터가 있다면 다시 호출하지 않음 (선택적 최적화)
+
       if (postProvider.postsFor(currentType).isEmpty) {
-        postProvider.fetchPostsFor(currentType, token: token);
+        postProvider.fetchPostsFor(currentType, token: token, userId: currentUserId );
       }
     }
   }

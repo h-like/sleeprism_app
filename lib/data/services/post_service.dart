@@ -126,8 +126,8 @@ class PostService {
   }
 
   // --- 기존 메소드들 내용 채우기 ---
-  Future<List<Post>> fetchMyPosts(String token) async {
-    return _fetchPostsFromApi('/api/me/posts', token: token);
+  Future<List<Post>> fetchMyPosts(int userId, String token) async {
+    return _fetchPostsFromApi('/api/posts/author/$userId', token: token);
   }
 
   Future<List<Post>> fetchLikedPosts(String token) async {

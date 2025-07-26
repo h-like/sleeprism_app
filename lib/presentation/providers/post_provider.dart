@@ -48,6 +48,7 @@ class PostProvider with ChangeNotifier {
   bool _isSearchLoading = false;
   String? _searchError;
 
+
   // --- 목록 페이지 Getter ---
   List<Post> postsFor(PostListType type) => _posts[type] ?? [];
   bool isLoadingFor(PostListType type) => _isLoading[type] ?? false;
@@ -74,6 +75,7 @@ class PostProvider with ChangeNotifier {
   String? get popularError => _popularError;
   PopularPostPeriod get selectedPeriod => _selectedPeriod;
 
+
   // 카테고리 변경 및 데이터 리프레시
   Future<void> changeCategoryAndFetch(PostCategory? category) async {
     _selectedCategory = category;
@@ -82,7 +84,7 @@ class PostProvider with ChangeNotifier {
   }
 
   // --- 목록 페이지 메소드 ---
-  Future<void> fetchPostsFor(PostListType type, {String? token}) async {
+  Future<void> fetchPostsFor(PostListType type, {String? token, int? userId}) async {
     if (isLoadingFor(type)) return;
 
     _isLoading[type] = true;
@@ -95,7 +97,10 @@ class PostProvider with ChangeNotifier {
           _posts[type] = await _postService.fetchPosts(category: _selectedCategory);
           break;
         case PostListType.myPosts:
-          _posts[type] = await _postService.fetchMyPosts(token!);
+          if (userId == null || token == null) {
+            throw Exception("User ID and Token are required for fetching my posts.");
+          }
+          _posts[type] = await _postService.fetchMyPosts(userId, token!);
           break;
         case PostListType.likedPosts:
           _posts[type] = await _postService.fetchLikedPosts(token!);
@@ -243,5 +248,18 @@ class PostProvider with ChangeNotifier {
     _comments = [];
     _detailError = null;
     _commentsError = null;
+  }
+
+  Future<void> createPost({
+    required String title,
+    required String content,
+    required PostCategory category,
+  }) async {
+    // TODO: 실제 API를 호출하여 게시글을 생성하는 로직 구현
+    // 예: final newPost = await _postRepository.createPost(title, content, category);
+
+    // 게시글 생성 후, 목록을 새로고침하여 UI에 반영
+    await fetchPostsFor(PostListType.all);
+    notifyListeners();
   }
 }
