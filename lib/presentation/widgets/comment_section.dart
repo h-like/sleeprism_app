@@ -1,6 +1,7 @@
 // lib/presentation/widgets/comment_section.dart
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../data/models/comment_model.dart';
 import '../utils/image_url_builder.dart';
 
@@ -64,7 +65,7 @@ class _CommentItem extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(comment.authorNickname, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    Text(comment.createdAt, style: Theme.of(context).textTheme.bodySmall),
+                    Text(DateFormat('yyyy-MM-dd HH:mm').format(DateTime.parse(comment.createdAt)), style: Theme.of(context).textTheme.bodySmall),
                     const SizedBox(height: 2),
                     Text(
                       comment.isDeleted ? '삭제된 댓글입니다.' : comment.content,

@@ -13,6 +13,7 @@ import 'package:sleeprism_app/data/models/user_model.dart';
 class ApiService {
   final String _baseUrl = "http://10.0.2.2:8080";
   final _secureStorage = const FlutterSecureStorage();
+  String? _token;
 
   Future<Map<String, String>> _getHeaders() async {
     final String? token = await _secureStorage.read(key: 'jwt_token');
@@ -119,6 +120,59 @@ class ApiService {
     } catch (e) {
       debugPrint("File upload failed with error: $e");
       return null;
+    }
+  }
+
+  Future<String?> socialLogin(String provider, String socialToken) async {
+    // API 엔드포인트 URL을 생성합니다.
+    final url = Uri.parse('$_baseUrl/oauth2/authorization');
+
+    debugPrint("[ApiService] socialLogin: Requesting to $url");
+    debugPrint("[ApiService] socialLogin: Provider=$provider");
+
+    try {
+      // 백엔드로 POST 요청을 보냅니다.
+      final response = await http.post(
+        url,
+        headers: {
+          // 요청 본문이 JSON 형식임을 명시합니다.
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          // 백엔드와 약속된 key 값으로 데이터를 전송합니다.
+          'provider': provider,
+          'token': socialToken,
+        }),
+      );
+
+      // --- 응답 처리 ---
+
+      // 요청이 성공적으로 처리되었을 경우 (HTTP 상태 코드 200 또는 201)
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        debugPrint("[ApiService] socialLogin: Success. Status code: ${response.statusCode}");
+        final responseBody = jsonDecode(response.body);
+
+        // 백엔드가 반환해주는 JWT 토큰을 추출합니다. ('token' 또는 'accessToken' 등 백엔드 응답 key에 맞춰주세요)
+        final jwtToken = responseBody['token'] as String?;
+
+        if (jwtToken != null) {
+          _token = jwtToken; // ApiService 내부 토큰 업데이트
+          debugPrint("[ApiService] socialLogin: JWT Token received.");
+          return jwtToken;
+        } else {
+          debugPrint("[ApiService] socialLogin: Token is null in response body.");
+          throw Exception('소셜 로그인 후 토큰을 받지 못했습니다.');
+        }
+      } else {
+        // 요청이 실패한 경우 (4xx, 5xx 에러)
+        debugPrint("[ApiService] socialLogin: Failed. Status code: ${response.statusCode}");
+        debugPrint("[ApiService] socialLogin: Response body: ${response.body}");
+        throw Exception('소셜 로그인에 실패했습니다. (${response.statusCode})');
+      }
+    } catch (e) {
+      // 네트워크 오류 또는 기타 예외 처리
+      debugPrint("[ApiService] socialLogin: An exception occurred. Error: $e");
+      throw Exception('소셜 로그인 중 오류가 발생했습니다.');
     }
   }
 }

@@ -1,6 +1,7 @@
 // lib/main.dart
 
 import 'package:flutter/material.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:provider/provider.dart';
 import 'package:sleeprism_app/api/api_service.dart';
 import 'package:sleeprism_app/presentation/providers/chat_provider.dart';
@@ -17,6 +18,8 @@ void main() {
   // ApiService는 Provider 외부에서 생성하여 의존성을 주입합니다.
   // timeago.setLocaleMessages('ko', timeago.KoMessages());
   final ApiService apiService = ApiService();
+  WidgetsFlutterBinding.ensureInitialized();
+  KakaoSdk.init(nativeAppKey: 'YOUR_NATIVE_APP_KEY');
 
   runApp(
     MultiProvider(
