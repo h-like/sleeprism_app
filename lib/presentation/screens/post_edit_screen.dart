@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:flutter_quill_delta_from_html/flutter_quill_delta_from_html.dart';
 import 'package:provider/provider.dart';
 import 'package:vsc_quill_delta_to_html/vsc_quill_delta_to_html.dart';
 import '../../data/models/post_category.dart';
@@ -7,75 +8,98 @@ import '../providers/post_provider.dart';
 
 /// 새 게시글을 작성하거나 기존 게시글을 수정하는 화면
 class PostEditScreen extends StatefulWidget {
-  const PostEditScreen({super.key});
+  const PostEditScreen({
+    super.key,
+    this.initialHtml, // 기존 글 수정 시 들어오는 HTML
+    this.postId,
+    this.initialTitle,
+    this.initialCategory,
+  });
+
+  final String? initialHtml;
+  final int? postId;
+  final String? initialTitle;
+  final PostCategory? initialCategory;
 
   @override
   State<PostEditScreen> createState() => _PostEditScreenState();
 }
 
 class _PostEditScreenState extends State<PostEditScreen> {
-  final _titleController = TextEditingController();
-  final _quillController = QuillController.basic();
-  PostCategory _selectedCategory = PostCategory.DREAM_DIARY;
+  late final QuillController _controller;
+  final _titleCtrl = TextEditingController();
+  late PostCategory _selectedCategory;
   bool _isSaving = false;
 
   @override
+  void initState() {
+    super.initState();
+    _titleCtrl.text = widget.initialTitle ?? '';
+    _selectedCategory = widget.initialCategory ?? PostCategory.values.first;
+
+    if ((widget.initialHtml ?? '').trim().isNotEmpty) {
+      final ops = HtmlToDelta().convert(widget.initialHtml!);
+      _controller = QuillController(
+        document: Document.fromJson(ops.toJson()),
+        selection: const TextSelection.collapsed(offset: 0),
+      );
+    } else {
+      _controller = QuillController.basic();
+    }
+  }
+
+  @override
   void dispose() {
-    _titleController.dispose();
-    _quillController.dispose();
+    _controller.dispose();
+    _titleCtrl.dispose();
     super.dispose();
   }
 
-  /// 게시글 저장 로직
-  Future<void> _savePost() async {
-    if (_titleController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('제목을 입력해주세요.')),
-      );
-      return;
-    }
-
-    if (_quillController.document.isEmpty()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('내용을 입력해주세요.')),
-      );
-      return;
-    }
+  Future<void> _save() async {
+    if (_isSaving) return;
 
     setState(() {
       _isSaving = true;
     });
 
+    final deltaJson = _controller.document.toDelta().toJson();
+    final html = QuillDeltaToHtmlConverter(deltaJson).convert();
+    final provider = context.read<PostProvider>();
+
     try {
-      final deltaJson = _quillController.document.toDelta().toJson();
-      final converter = QuillDeltaToHtmlConverter(deltaJson);
-      final htmlContent = converter.convert();
-
-      // [수정 필요] PostProvider에 아래와 같은 시그니처의 createPost 메소드를 구현해야 합니다.
-      await Provider.of<PostProvider>(context, listen: false).createPost(
-        title: _titleController.text,
-        content: htmlContent,
-        category: _selectedCategory,
+      if (widget.postId != null) {
+        // 기존 게시글 수정
+        await provider.updatePost (
+          id: widget.postId.toString(),
+          title: _titleCtrl.text.trim(),
+          contentHtml: html,
+          category: _selectedCategory,
+        );
+        // TODO: 수정 완료 후 상세 페이지로 돌아가는 로직 추가
+      } else {
+        // 새 게시글 저장
+        await provider.createPost(
+          title: _titleCtrl.text.trim(),
+          content: html,
+          category: _selectedCategory,
+        );
+        // TODO: 작성 완료 후 목록 페이지로 돌아가는 로직 추가
+      }
+      // 저장 성공 메시지 표시
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('게시글이 성공적으로 저장되었습니다.')),
       );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('게시글이 성공적으로 등록되었습니다.')),
-        );
-        Navigator.of(context).pop();
-      }
+      // 저장 성공 후 화면 닫기
+      Navigator.of(context).pop();
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('저장에 실패했습니다: $e')),
-        );
-      }
+      // 에러 메시지 표시
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('저장 실패: $e')),
+      );
     } finally {
-      if (mounted) {
-        setState(() {
-          _isSaving = false;
-        });
-      }
+      setState(() {
+        _isSaving = false;
+      });
     }
   }
 
@@ -83,78 +107,84 @@ class _PostEditScreenState extends State<PostEditScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('글쓰기'),
+        title: Text(widget.postId == null ? '글쓰기' : '글 수정'),
         actions: [
-          if (_isSaving)
-            const Padding(
-              padding: EdgeInsets.only(right: 16.0),
-              child: Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white))),
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.save_alt_outlined),
-              onPressed: _savePost,
-              tooltip: '저장',
+          // 포스팅/저장 버튼
+          _isSaving
+              ? const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.blue,
+              ),
             ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _titleController,
-                    decoration: const InputDecoration(
-                      hintText: '제목',
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12.0),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                DropdownButton<PostCategory>(
-                  value: _selectedCategory,
-                  items: PostCategory.values
-                      .map((category) => DropdownMenuItem(
-                    value: category,
-                    child: Text(category.displayName),
-                  ))
-                      .toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() {
-                        _selectedCategory = value;
-                      });
-                    }
-                  },
-                ),
-              ],
-            ),
+          )
+              : IconButton(
+            icon: const Icon(Icons.send),
+            onPressed: _save,
           ),
-          // [수정됨] flutter_quill 최신 버전에 맞게 QuillToolbar 위젯 사용
-          // QuillEditor(
-          //   configurations: QuillToolbarConfigurations(
-          //     controller: _quillController,
-          //     showAlignmentButtons: true,
-          //     // TODO: 이미지 업로드 핸들러 추가
-          //   ),
-          // ),
-          const Divider(height: 1, thickness: 1),
-          // [수정됨] flutter_quill 최신 버전에 맞게 QuillEditor 위젯과 configurations 사용
-          // Expanded(
-            // child: QuillEditor(
-            //   configurations    A: QuillEditorConfigurations(
-            //     controller: _quillController,
-            //     readOnly: false, // readOnly는 configurations 안으로 이동
-            //     padding: const EdgeInsets.all(16), // padding은 configurations 안으로 이동
-            //   ),
-            // ),
-          // )
         ],
       ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            // 카테고리 드롭다운
+            _buildCategoryDropdown(),
+            // 제목 입력 필드
+            TextField(
+              controller: _titleCtrl,
+              decoration: const InputDecoration(
+                hintText: '제목을 입력하세요',
+                border: InputBorder.none,
+              ),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const Divider(),
+            // QuillEditor
+            Expanded(
+              child: QuillEditor.basic(
+                controller: _controller,
+                config: QuillEditorConfig(
+                  padding: EdgeInsets.zero,
+                  autoFocus: true,
+                  checkBoxReadOnly: false,
+                ),
+              ),
+            ),
+            // 툴바는 위젯 상단에 위치
+            QuillSimpleToolbar(
+              controller: _controller,
+              config: const QuillSimpleToolbarConfig(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryDropdown() {
+    return DropdownButton<PostCategory>(
+      value: _selectedCategory,
+      underline: const SizedBox(),
+      onChanged: (PostCategory? newValue) {
+        if (newValue != null) {
+          setState(() {
+            _selectedCategory = newValue;
+          });
+        }
+      },
+      items: PostCategory.values.map<DropdownMenuItem<PostCategory>>(
+            (PostCategory category) {
+          return DropdownMenuItem<PostCategory>(
+            value: category,
+            child: Text(category.displayName),
+          );
+        },
+      ).toList(),
     );
   }
 }

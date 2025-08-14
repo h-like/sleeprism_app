@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:sleeprism_app/api/api_service.dart';
 import '../models/post_model.dart';
 import '../models/post_category.dart'; // PostCategory enum 임포트
 
@@ -136,5 +137,94 @@ class PostService {
 
   Future<List<Post>> fetchBookmarkedPosts(String token) async {
     return _fetchPostsFromApi('/api/me/bookmarked-posts', token: token);
+  }
+
+
+  // 게시글을 생성하는 메서드
+  Future<Post> createPost({
+    required String title,
+    required String content,
+    required PostCategory category,
+    required String token,
+  }) async {
+    final url = Uri.parse('${_baseUrl}/api/posts');
+
+    // 요청 바디 생성
+    final Map<String, dynamic> requestBody = {
+      'title': title,
+      'content': content,
+      'category': category.name, // enum 이름을 문자열로 변환하여 전송
+    };
+    print('Sending POST request to: $url');
+    print('Request Headers: ${await _getHeaders()}');
+    print('Request Body: ${jsonEncode(requestBody)}');
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(requestBody),
+    );
+
+    if (response.statusCode == 201) {
+      // 성공적으로 게시글이 생성되면 응답 본문을 Post 객체로 변환하여 반환
+      final Map<String, dynamic> responseData = jsonDecode(utf8.decode(response.bodyBytes));
+      return Post.fromJson(responseData);
+    } else {
+      // 실패 시 예외 발생
+      throw Exception('Failed to create post. Status code: ${response.statusCode}');
+    }
+  }
+
+  // final ApiService _apiService = ApiService(); // ApiService 인스턴스 사용
+
+  // 게시글을 수정하는 메서드
+  Future<Post> updatePost({
+    required String id,
+    required String title,
+    required String content,
+    required PostCategory category,
+    required String token,
+  }) async {
+    final url = Uri.parse('${_baseUrl}/api/posts/$id');
+
+    // 요청 바디 생성
+    final Map<String, dynamic> requestBody = {
+      'title': title,
+      'content': content,
+      'category': category.name, // enum 이름을 문자열로 변환하여 전송
+    };
+
+    final response = await http.put(
+      url,
+      headers: await _getHeaders(),
+      body: jsonEncode(requestBody),
+    );
+
+    if (response.statusCode == 200) {
+      // 성공적으로 게시글이 수정되면 응답 본문을 Post 객체로 변환하여 반환
+      final Map<String, dynamic> responseData = jsonDecode(utf8.decode(response.bodyBytes));
+      return Post.fromJson(responseData);
+    } else {
+      // 실패 시 예외 발생
+      throw Exception('Failed to update post. Status code: ${response.statusCode}');
+    }
+  }
+
+  // 게시글을 삭제하는 메서드
+  Future<void> deletePost({
+    required String id,
+  }) async {
+    final url = Uri.parse('$_baseUrl/api/posts/$id');
+    final response = await http.delete(
+      url,
+      headers: await _getHeaders(),
+    );
+
+    if (response.statusCode != 204) {
+      throw Exception('Failed to delete post. Status code: ${response.statusCode}');
+    }
   }
 }

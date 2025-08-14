@@ -59,19 +59,19 @@ class InterpretationOption {
     String finalTitle = '제목 없음';
     String finalContent = '내용 없음';
 
-    // 콜론 ':'을 기준으로 문자열을 분리합니다.
-    int colonIndex = rawText.indexOf(':');
-    if (colonIndex != -1) {
-      // 콜론 앞부분을 title로 사용합니다.
-      finalTitle = rawText.substring(0, colonIndex).trim();
-      // 콜론 뒷부분을 content로 사용합니다.
-      if (rawText.length > colonIndex + 1) {
-        finalContent = rawText.substring(colonIndex + 1).trim();
-      }
-    } else {
-      // 콜론이 없으면 전체 문자열을 title로 사용합니다.
-      finalTitle = rawText;
-    }
+    // // 콜론 ':'을 기준으로 문자열을 분리합니다.
+    // int colonIndex = rawText.indexOf(':');
+    // if (colonIndex != -1) {
+    //   // 콜론 앞부분을 title로 사용합니다.
+    //   finalTitle = rawText.substring(0, colonIndex).trim();
+    //   // 콜론 뒷부분을 content로 사용합니다.
+    //   if (rawText.length > colonIndex + 1) {
+    //     finalContent = rawText.substring(colonIndex + 1).trim();
+    //   }
+    // } else {
+    //   // 콜론이 없으면 전체 문자열을 title로 사용합니다.
+    //   finalTitle = rawText;
+    // }
 
     return InterpretationOption(
       optionIndex: json['optionIndex'],

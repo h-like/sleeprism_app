@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
+import 'package:sleeprism_app/data/services/auth_service.dart';
+import 'package:sleeprism_app/presentation/screens/post_edit_screen.dart';
 
 import '../providers/auth_provider.dart';
 import '../providers/post_provider.dart';
@@ -24,17 +26,32 @@ class PostDetailScreen extends StatefulWidget {
 
 class _PostDetailScreenState extends State<PostDetailScreen> {
   final _commentController = TextEditingController();
+  String? _currentUserId;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadCurrentUserId();
       final token = Provider.of<AuthProvider>(context, listen: false).token;
       Provider.of<PostProvider>(
         context,
         listen: false,
       ).fetchPostDetails(widget.postId, token);
     });
+  }
+  // 현재 로그인한 사용자 ID를 가져오는 메서드
+  Future<void> _loadCurrentUserId() async {
+    final authService = AuthService();
+    try {
+      final user = await authService.fetchUserProfile();
+      setState(() {
+        _currentUserId = user.id.toString();
+        print('currentUserId: ${_currentUserId}');
+      });
+    } catch (e) {
+      _currentUserId = null;
+    }
   }
 
   @override
@@ -87,7 +104,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        actions: _buildActionButtons(),
+      ),
       body: Consumer<PostProvider>(
         builder: (context, provider, child) {
           if (provider.isDetailLoading || provider.detailedPost == null) {
@@ -119,6 +138,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                               style: Theme.of(context).textTheme.headlineSmall,
                             ),
                             const SizedBox(height: 8),
+                            // 작성자
                             _buildAuthorInfo(post),
                             const Divider(height: 32),
                             HtmlWidget(correctedHtmlContent),
@@ -144,8 +164,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     ),
                     provider.isCommentsLoading
                         ? const SliverToBoxAdapter(
-                          child: Center(child: CircularProgressIndicator()),
-                        )
+                      child: Center(child: CircularProgressIndicator()),
+                    )
                         : CommentSection(comments: provider.comments),
                   ],
                 ),
@@ -165,7 +185,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         CircleAvatar(
           radius: 20,
           backgroundImage:
-              authorProfileUrl != null ? NetworkImage(authorProfileUrl) : null,
+          authorProfileUrl != null ? NetworkImage(authorProfileUrl) : null,
           child: authorProfileUrl == null ? const Icon(Icons.person) : null,
         ),
         const SizedBox(width: 8),
@@ -177,7 +197,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             Text(
-                // post.createdAt,
+              // post.createdAt,
                 DateFormat('yyyy-MM-dd HH:mm').format(DateTime.parse(post.createdAt)),
                 style: Theme.of(context).textTheme.bodySmall),
           ],
@@ -220,9 +240,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           children: [
             TextButton.icon(
               onPressed:
-                  token == null
-                      ? null
-                      : () => provider.toggleLikeOnDetail(token),
+              token == null
+                  ? null
+                  : () => provider.toggleLikeOnDetail(token),
               icon: Icon(
                 post.isLiked ? Icons.favorite : Icons.favorite_border,
                 color: post.isLiked ? Colors.red : null,
@@ -231,9 +251,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             ),
             TextButton.icon(
               onPressed:
-                  token == null
-                      ? null
-                      : () => provider.toggleBookmarkOnDetail(token),
+              token == null
+                  ? null
+                  : () => provider.toggleBookmarkOnDetail(token),
               icon: Icon(
                 post.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
                 color: post.isBookmarked ? Colors.amber : null,
@@ -250,6 +270,74 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           ],
         ),
       ],
+    );
+  }
+
+
+  List<Widget> _buildActionButtons() {
+    final post = Provider.of<PostProvider>(context).detailedPost;
+      print('게시글의 오리지널 작가 ${post?.originalAuthorId} 현재 유저: ${_currentUserId}');
+
+    print('type check authorId: ${post!.originalAuthorId} (${post.originalAuthorId.runtimeType}), '
+        'currentUser: $_currentUserId (${_currentUserId.runtimeType})');
+
+    if (post != null && post.originalAuthorId.toString() == _currentUserId) {
+      print('authorId: ${post?.originalAuthorId}, currentUser: $_currentUserId');
+      return [
+        IconButton(
+          icon: const Icon(Icons.edit),
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => PostEditScreen(
+                  postId: post.id,
+                  initialTitle: post.title,
+                  initialHtml: post.content,
+                  initialCategory: post.category,
+                ),
+              ),
+            );
+          },
+        ),
+        IconButton(
+          icon: const Icon(Icons.delete),
+          onPressed: () => _showDeleteDialog(context, post.id.toString()),
+        ),
+      ];
+    }
+    return [];
+  }
+
+  void _showDeleteDialog(BuildContext context, String postId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('게시글 삭제'),
+        content: const Text('정말 이 게시글을 삭제하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              try {
+                await context.read<PostProvider>().deletePost(id: postId);
+                Navigator.of(context).pop(); // 상세 페이지에서 나가기
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('게시글이 삭제되었습니다.')),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('삭제 실패: $e')),
+                );
+              }
+            },
+            child: const Text('삭제'),
+          ),
+        ],
+      ),
     );
   }
 

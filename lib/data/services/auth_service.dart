@@ -3,11 +3,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 // import '../models/auth_response_model.dart'; // AuthResponseDTO에 해당하는 모델
 
 class AuthService {
-  // ⚠️ 중요: 이 주소를 실제 백엔드 서버 주소로 변경해야 합니다!
   static const String _baseUrl = 'http://10.0.2.2:8080';
   final _storage = const FlutterSecureStorage();
 
@@ -26,8 +26,9 @@ class AuthService {
     await _storage.delete(key: 'jwt_token');
   }
 
-  // 로그인 API 호출
-  Future<AuthResponse> signIn(String email, String password) async {
+  // 로그인 API 호출 (새로 작성하거나 기존 코드와 통합)
+  // 이 메서드가 로그인 후 토큰을 저장하는 역할을 해야 합니다.
+  Future<void> signIn(String email, String password) async {
     final response = await http.post(
       Uri.parse('$_baseUrl/api/users/signin'),
       headers: <String, String>{
@@ -41,12 +42,15 @@ class AuthService {
 
     if (response.statusCode == 200) {
       final responseBody = jsonDecode(utf8.decode(response.bodyBytes));
-      final authResponse = AuthResponse.fromJson(responseBody);
-      // 로그인이 성공하면 토큰을 저장
-      await _saveToken(authResponse.accessToken);
-      return authResponse;
+      // AuthResponseDTO에 해당하는 모델이 있다면 그 모델을 사용합니다.
+      // 여기서는 임시로 'accessToken'이라는 키를 사용했습니다.
+      final accessToken = responseBody['accessToken'] as String?;
+      if (accessToken != null) {
+        await _saveToken(accessToken); // 로그인 성공 시 토큰 저장
+      } else {
+        throw Exception('Access token not found in response.');
+      }
     } else {
-      // TODO: 서버에서 오는 에러 메시지를 파싱해서 보여주면 더 좋습니다.
       throw Exception('로그인에 실패했습니다.');
     }
   }
@@ -72,19 +76,24 @@ class AuthService {
       throw Exception('프로필 정보를 불러오는데 실패했습니다.');
     }
   }
-}
+  static const _tokenKey = 'auth_token';
 
-// AuthResponseDTO를 위한 모델
-class AuthResponse {
-  final String accessToken;
-  final User user;
-
-  AuthResponse({required this.accessToken, required this.user});
-
-  factory AuthResponse.fromJson(Map<String, dynamic> json) {
-    return AuthResponse(
-      accessToken: json['accessToken'],
-      user: User.fromJson(json['user']),
-    );
+  // 토큰을 로컬 저장소에 저장하는 메서드
+  Future<void> saveUserToken(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_tokenKey, token);
   }
+
+  // 로컬 저장소에서 토큰을 가져오는 메서드
+  Future<String?> getUserToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_tokenKey);
+  }
+
+  // 토큰을 삭제하는 메서드 (로그아웃 시)
+  Future<void> deleteUserToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_tokenKey);
+  }
+
 }

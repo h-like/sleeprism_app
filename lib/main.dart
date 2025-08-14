@@ -1,6 +1,7 @@
 // lib/main.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:provider/provider.dart';
 import 'package:sleeprism_app/api/api_service.dart';
@@ -51,6 +52,9 @@ class MyApp extends StatelessWidget {
     }
 
     return MaterialApp.router(
+      localizationsDelegates: [
+        FlutterQuillLocalizations.delegate, // 이 부분을 추가하세요.
+      ],
       debugShowCheckedModeBanner: false,
       routerConfig: router,
       title: 'SleepRism',

@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:sleeprism_app/api/api_service.dart';
 import 'package:sleeprism_app/data/models/post_category.dart';
+import 'package:sleeprism_app/data/services/auth_service.dart';
 
 // import 'package.flutter/material.dart';
 import '../../data/models/comment_model.dart';
@@ -19,7 +20,9 @@ enum PopularPostPeriod { today, week, month, all_time }
 class PostProvider with ChangeNotifier {
   final PostService _postService = PostService();
   final CommentService _commentService = CommentService();
+  final AuthService _authService = AuthService();
   final ApiService _apiService;
+
   PostProvider(this._apiService);
 
   // --- 목록 페이지 상태 ---
@@ -48,33 +51,43 @@ class PostProvider with ChangeNotifier {
   bool _isSearchLoading = false;
   String? _searchError;
 
-
   // --- 목록 페이지 Getter ---
   List<Post> postsFor(PostListType type) => _posts[type] ?? [];
+
   bool isLoadingFor(PostListType type) => _isLoading[type] ?? false;
+
   String? errorFor(PostListType type) => _errorMessages[type];
 
   // --- 상세 페이지 Getter ---
   Post? get detailedPost => _detailedPost;
+
   bool get isDetailLoading => _isDetailLoading;
+
   String? get detailError => _detailError;
+
   PostCategory? get selectedCategory => _selectedCategory;
 
   List<Comment> get comments => _comments;
+
   bool get isCommentsLoading => _isCommentsLoading;
+
   String? get commentsError => _commentsError;
 
   // --- 검색 Getter 추가 ---
   List<Post> get searchResults => _searchResults;
+
   bool get isSearchLoading => _isSearchLoading;
+
   String? get searchError => _searchError;
 
   // --- 인기글 Getter 추가 ---
   List<Post> get popularPosts => _popularPosts[_selectedPeriod] ?? [];
-  bool get isPopularLoading => _isPopularLoading;
-  String? get popularError => _popularError;
-  PopularPostPeriod get selectedPeriod => _selectedPeriod;
 
+  bool get isPopularLoading => _isPopularLoading;
+
+  String? get popularError => _popularError;
+
+  PopularPostPeriod get selectedPeriod => _selectedPeriod;
 
   // 카테고리 변경 및 데이터 리프레시
   Future<void> changeCategoryAndFetch(PostCategory? category) async {
@@ -84,7 +97,11 @@ class PostProvider with ChangeNotifier {
   }
 
   // --- 목록 페이지 메소드 ---
-  Future<void> fetchPostsFor(PostListType type, {String? token, int? userId}) async {
+  Future<void> fetchPostsFor(
+      PostListType type, {
+        String? token,
+        int? userId,
+      }) async {
     if (isLoadingFor(type)) return;
 
     _isLoading[type] = true;
@@ -94,11 +111,15 @@ class PostProvider with ChangeNotifier {
     try {
       switch (type) {
         case PostListType.all:
-          _posts[type] = await _postService.fetchPosts(category: _selectedCategory);
+          _posts[type] = await _postService.fetchPosts(
+            category: _selectedCategory,
+          );
           break;
         case PostListType.myPosts:
           if (userId == null || token == null) {
-            throw Exception("User ID and Token are required for fetching my posts.");
+            throw Exception(
+              "User ID and Token are required for fetching my posts.",
+            );
           }
           _posts[type] = await _postService.fetchMyPosts(userId, token!);
           break;
@@ -184,7 +205,10 @@ class PostProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      _searchResults = await _postService.searchPosts(type: type, keyword: keyword);
+      _searchResults = await _postService.searchPosts(
+        type: type,
+        keyword: keyword,
+      );
     } catch (e) {
       _searchError = e.toString();
     } finally {
@@ -206,6 +230,7 @@ class PostProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+
   // 인기 게시글 데이터를 불러오는 메소드
   Future<void> fetchPopularPosts() async {
     _isPopularLoading = true;
@@ -214,7 +239,9 @@ class PostProvider with ChangeNotifier {
 
     try {
       // 현재 선택된 기간(enum)을 API가 요구하는 문자열로 변환하여 전달
-      final posts = await _postService.fetchPopularPosts(period: _selectedPeriod.name);
+      final posts = await _postService.fetchPopularPosts(
+        period: _selectedPeriod.name,
+      );
       _popularPosts[_selectedPeriod] = posts;
     } catch (e) {
       _popularError = e.toString();
@@ -250,16 +277,74 @@ class PostProvider with ChangeNotifier {
     _commentsError = null;
   }
 
+  // 게시글 생성
   Future<void> createPost({
     required String title,
     required String content,
     required PostCategory category,
   }) async {
-    // TODO: 실제 API를 호출하여 게시글을 생성하는 로직 구현
-    // 예: final newPost = await _postRepository.createPost(title, content, category);
+    try {
+      final token = await _authService.getToken();
+      if (token == null) {
+        throw Exception('User is not authenticated.');
+      }
 
-    // 게시글 생성 후, 목록을 새로고침하여 UI에 반영
-    await fetchPostsFor(PostListType.all);
-    notifyListeners();
+      await _postService.createPost(
+        title: title,
+        content: content,
+        category: category,
+        token: token,
+      );
+
+      await fetchPostsFor(PostListType.all);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // 게시글 수정
+  Future<void> updatePost({
+    required String id,
+    required String title,
+    required String contentHtml,
+    required PostCategory category,
+  }) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) {
+        throw Exception('User is not authenticated.');
+      }
+
+      await _postService.updatePost(
+        id: id,
+        title: title,
+        content: contentHtml,
+        category: category,
+        token: token,
+      );
+
+      await fetchPostsFor(PostListType.all);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // 게시글을 삭제하는 메서드
+  Future<void> deletePost({
+    required String id,
+  }) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) {
+        throw Exception('User is not authenticated.');
+      }
+
+      await _postService.deletePost(id: id);
+
+      // 삭제 후 게시글 목록을 새로고침하여 UI에 반영
+      await fetchPostsFor(PostListType.all);
+    } catch (e) {
+      rethrow;
+    }
   }
 }

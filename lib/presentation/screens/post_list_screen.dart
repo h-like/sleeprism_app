@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sleeprism_app/presentation/screens/post_edit_screen.dart';
 import 'package:sleeprism_app/presentation/screens/post_search_delegate.dart';
 import '../../data/models/post_category.dart';
 import '../providers/post_provider.dart';
@@ -86,6 +87,16 @@ class _PostListScreenState extends State<PostListScreen> {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // TODO: 글쓰기 화면으로 이동하는 로직을 여기에 추가하세요.
+          Navigator.of(context).push(MaterialPageRoute(builder: (context) => PostEditScreen()));
+        },
+        backgroundColor: Colors.indigoAccent, // 파란색/보라색 계열 색상
+        mini: false, // 크기를 너무 크지 않게 조절하는 속성, false가 기본값으로 적당한 크기입니다.
+        child: const Icon(Icons.edit, color: Colors.white), // 연필 아이콘
+      ),
+
     );
   }
 
