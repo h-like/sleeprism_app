@@ -1,16 +1,23 @@
-# sleeprism_app
+# 🌙 Sleeprism 앱
 
-A new Flutter project.
+> 📱꿈을 공유하고 해석하는 AI 기반 커뮤니티 서비스  
 
-## Getting Started
+[배포 링크](https://example.com) | [시연 영상](https://youtu.be/6_6iP3dj9r8) | [포트폴리오](https://example.com)
 
-This project is a starting point for a Flutter application.
+---
 
-A few resources to get you started if this is your first Flutter project:
+## 🧠 주요 기능
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- ✍️ 꿈 입력 → AI 해몽
+- 🃏 타로 카드 선택 기능
+- 🗣 사용자 간 댓글 및 채팅
+- 🔔 실시간 알림 기능
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+---
+
+## 🛠 기술 스택
+- Frontend: Flutter
+- Backend: Spring Boot, SpringSecurity, WebSocket
+- Database: MySQL
+
+---
