@@ -5,7 +5,7 @@
 [시연 영상](https://youtu.be/6_6iP3dj9r8)
 
 <p align="center">
-  <img src="assets/login.gif" height="400" />
+  <img src="assets/login.gif" height="500" />
 </p>
 
 ---
@@ -19,7 +19,7 @@
 
 
 <p align="center">
-  <img src="assets/edit.gif" height="400" />
+  <img src="assets/edit.gif" height="500" />
 </p>
 
 
