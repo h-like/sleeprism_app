@@ -75,7 +75,7 @@ class InterpretationOption {
 
     return InterpretationOption(
       optionIndex: json['optionIndex'],
-      title: finalTitle, // 분리된 제목
+      title: rawText, // 분리된 제목
       content: finalContent, // 분리된 내용
       tarotCardId: json['tarotCardId'],
       tarotCardName: json['tarotCardName'],

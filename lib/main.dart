@@ -57,7 +57,7 @@ class MyApp extends StatelessWidget {
       ],
       debugShowCheckedModeBanner: false,
       routerConfig: router,
-      title: 'SleepRism',
+      title: 'Sleeprism',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueAccent),
         useMaterial3: true,
